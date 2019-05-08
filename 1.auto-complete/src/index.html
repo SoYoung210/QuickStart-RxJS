@@ -3,31 +3,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="./styles.css">
   <script src="../../node_modules/rxjs/bundles/rxjs.umd.js"></script>
   <title>자동완성 ui </title>
 </head>
 <body>
-  <input type="input" id="search" placeholder="검색하고 싶은 사용자 아이디를 입력" />
+  <div class="autocomplete">
+    <input type="input" id="search" placeholder="검색하고 싶은 사용자 아이디를 입력" />
+    <ul id="suggestLayer"></ul>
+  </div>
 </body>
 
 <script>
   
   const { fromEvent } = rxjs;
   const { ajax } = rxjs.ajax;
-  const { map, mergeMap, debounceTime } = rxjs.operators;
+  const { map, mergeMap, debounceTime, filter, distinctUntilChanged } = rxjs.operators;
 
   // map + mergeAll === mergeMap 
 
   const user$ = fromEvent(document.getElementById('search'), 'keyup').pipe(
     debounceTime(300),
     map(event => event.target.value),
+    distinctUntilChanged(),
+    filter(query => query.trim().length > 0), // 검색어 공백 제거, 0 이상 일때만. 
     mergeMap(query => {
       console.log(query)
       return ajax.getJSON(`https://api.github.com/search/users?q=${query}`)}),
   )
 
-  user$.subscribe(event => {
-    console.log(event)
+
+
+  const $layer = document.getElementById('suggestLayer');
+
+  function drawLayer(items) {
+    $layer.innerHTML = items.map(user => {
+      return `
+        <li class="user">
+          <img src="${user.avatar_url}" width="50px" height="50px"/>
+          <p>
+            <a href="${user.html_url}" target="_blank">${user.login} </a>  
+          </p>
+        </li>
+      `
+    }).join("")
+  }
+
+  user$.subscribe(v => {
+    drawLayer(v.items)
   })
 </script>
 </html>
