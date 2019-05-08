@@ -14,15 +14,16 @@
   
   const { fromEvent } = rxjs;
   const { ajax } = rxjs.ajax;
-  const { map, mergeAll } = rxjs.operators;
+  const { map, mergeMap, debounceTime } = rxjs.operators;
 
-  // observable 안의 Observable을 평탄하게 다 펼침.
+  // map + mergeAll === mergeMap 
+
   const user$ = fromEvent(document.getElementById('search'), 'keyup').pipe(
+    debounceTime(300),
     map(event => event.target.value),
-    map(query => {
+    mergeMap(query => {
       console.log(query)
       return ajax.getJSON(`https://api.github.com/search/users?q=${query}`)}),
-    mergeAll(),
   )
 
   user$.subscribe(event => {
