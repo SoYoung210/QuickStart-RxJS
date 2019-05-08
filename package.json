@@ -1,0 +1,12 @@
+{
+  "name": "quickstart-rxjs",
+  "version": "1.0.0",
+  "description": "rxjs practice",
+  "main": "index.js",
+  "repository": "git@github.com:SoYoung210/QuickStart-RxJS.git",
+  "author": "SoYoung210 <ethdud1@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "rxjs": "^6.5.1"
+  }
+}
