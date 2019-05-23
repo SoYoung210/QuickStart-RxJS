@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <link rel="stylesheet" href="./styles.css">
   <script src="../../node_modules/rxjs/bundles/rxjs.umd.js"></script>
-  <script src="https://use.fontawesome.com/release/v5.0.8/js/all.js"></script>
+  <script src="https://use.fontawesome.com/releases/v5.0.8/js/all.js"></script>
   <title>자동완성 ui </title>
 </head>
 <body>
@@ -16,8 +16,6 @@
     <div id="loading">
         <i class="fas fa-spinner fa-pulse"></i>
     </div>
-    <input type="input" id="search" placeholder="검색하고 싶은 사용자 아이디를 입력" />
-    <ul id="suggestLayer"></ul>
   </div>
 </body>
 
@@ -25,22 +23,49 @@
   
   const { fromEvent } = rxjs;
   const { ajax } = rxjs.ajax;
-  const { map, mergeMap, debounceTime, filter, distinctUntilChanged } = rxjs.operators;
+  const { map, mergeMap, debounceTime, filter, distinctUntilChanged, tap, switchMap, catchError, retry } = rxjs.operators;
 
   // map + mergeAll === mergeMap 
 
-  const user$ = fromEvent(document.getElementById('search'), 'keyup').pipe(
-    debounceTime(300),
-    map(event => event.target.value),
-    distinctUntilChanged(),
-    filter(query => query.trim().length > 0), // 검색어 공백 제거, 0 이상 일때만. 
+//   const user$ = fromEvent(document.getElementById('search'), 'keyup').pipe(
+//     debounceTime(300),
+//     map(event => event.target.value),
+//     distinctUntilChanged(),
+//     filter(query => query.trim().length > 0), // 검색어 공백 제거, 0 이상 일때만. 
+//     tap(showLoading),
+//     mergeMap(query => {
+//       console.log(query)
+//       return ajax.getJSON(`https://api.github.com/search/users?q=${query}`)}
+//     ),
+//     tap(hideLoading),
+//   )
+
+  const keyup$ = fromEvent(document.getElementById('search'), 'keyup')
+                  .pipe(
+                    debounceTime(300),
+                    map(event => event.target.value),
+                    distinctUntilChanged()
+                  )
+
+  const user$ = keyup$.pipe(
+    filter(query => query.trim().length > 0),
     tap(showLoading),
-    mergeMap(query => {
-      console.log(query)
-      return ajax.getJSON(`https://api.github.com/search/users?q=${query}`)}
-    ),
+    switchMap(query => ajax.getJSON(`https://api.github.com/search/users?q=${query}`)),
     tap(hideLoading),
-  )
+    retry(2), //2번 더시도하고 그만두기. ,
+    finalize(hideLoading), // 에러가 발생하거나 정상 종료인 경우 로딩바 닫기. 
+    // catchError((e, orgObservable) => {
+    //   console.log(e.message);
+    //   return orgObservable;
+    // }),
+    
+  );
+
+  // 구독해주어야만 작동. 
+  const reset$ = keyup$.pipe(
+    filter(query => query.trim().length === 0),
+    tap(v => $layer.innerHTML ="")
+  );
 
   const $layer = document.getElementById('suggestLayer');
 
@@ -69,6 +94,12 @@
 
   user$.subscribe(v => {
     drawLayer(v.items)
-  })
+  },
+    e => {
+      console.error(e);
+      alert(e.message);
+    }
+  )
+  reset$.subscribe()
 </script>
 </html>
