@@ -3,6 +3,14 @@
   width: 300px;
 }
 
+#loading {
+    position: absolute;
+    z-index: 2;
+    top: 2px;
+    right: none;
+    display: none;
+}
+
 #search {
   width: 100%;
 }

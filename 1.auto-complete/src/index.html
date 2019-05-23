@@ -5,10 +5,17 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <link rel="stylesheet" href="./styles.css">
   <script src="../../node_modules/rxjs/bundles/rxjs.umd.js"></script>
+  <script src="https://use.fontawesome.com/release/v5.0.8/js/all.js"></script>
   <title>자동완성 ui </title>
 </head>
 <body>
   <div class="autocomplete">
+    <input id="search" type="input" placeholder="검색하고 싶은 사용자 아이디를 입력해 주세요." />
+    <ul id="suggestLayer">
+    </ul>
+    <div id="loading">
+        <i class="fas fa-spinner fa-pulse"></i>
+    </div>
     <input type="input" id="search" placeholder="검색하고 싶은 사용자 아이디를 입력" />
     <ul id="suggestLayer"></ul>
   </div>
@@ -27,12 +34,13 @@
     map(event => event.target.value),
     distinctUntilChanged(),
     filter(query => query.trim().length > 0), // 검색어 공백 제거, 0 이상 일때만. 
+    tap(showLoading),
     mergeMap(query => {
       console.log(query)
-      return ajax.getJSON(`https://api.github.com/search/users?q=${query}`)}),
+      return ajax.getJSON(`https://api.github.com/search/users?q=${query}`)}
+    ),
+    tap(hideLoading),
   )
-
-
 
   const $layer = document.getElementById('suggestLayer');
 
@@ -47,6 +55,16 @@
         </li>
       `
     }).join("")
+  }
+
+  const $loading = document.getElementById('loading');
+
+  function showLoading() {
+      $loading.style.display = 'block';
+  }
+
+  function hideLoading() {
+      $loading.style.display = 'none';
   }
 
   user$.subscribe(v => {
